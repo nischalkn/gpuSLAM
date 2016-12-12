@@ -14,7 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
 SET(CUDA_NVCC_FLAGS "-arch=sm_21" CACHE STRING "nvcc flags" FORCE)
 SET (CUDA_VERBOSE_BUILD ON CACHE BOOL "nvcc verbose" FORCE)
 SET(LIB_TYPE STATIC) 
-CUDA_ADD_LIBRARY(TestLib ${LIB_TYPE} src/helloWorld.cu)
+# CUDA_ADD_LIBRARY(TestLib ${LIB_TYPE} src/helloWorld.cu)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -107,7 +107,7 @@ CUDA_ADD_LIBRARY(TestLib ${LIB_TYPE} src/helloWorld.cu)
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES SLAM
+#  LIBRARIES slam
 #  CATKIN_DEPENDS roscpp rospy std_msgs
 #  DEPENDS system_lib
 )
@@ -120,6 +120,7 @@ catkin_package(
 ## Your package locations should be listed before other locations
 # include_directories(include)
 include_directories(
+  include
   ${catkin_INCLUDE_DIRS}
 )
 
@@ -134,7 +135,7 @@ include_directories(
 # add_dependencies(SLAM ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Declare a C++ executable
-add_executable(slam_node src/main.cpp)
+add_executable(slam_node src/main.cpp src/particleFilter.cpp src/maps.cpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
@@ -145,7 +146,7 @@ add_dependencies(slam_node TestLib)
 target_link_libraries(slam_node
   ${catkin_LIBRARIES}
   ${PCL_LIBRARIES}
-  TestLib
+#  TestLib
 )
 
 #############
