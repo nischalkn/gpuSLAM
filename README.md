@@ -11,7 +11,7 @@ Mapping of the environment using sensor data is an important problem in robotics
 ### OUTPUT
 The following image was built using LIDAR data real-time on the vehicle.
 
-![](images/output.png)
+![](Images/output.png)
 
 ### PARAMETERS
 #### Subscribed Topics
@@ -58,17 +58,17 @@ Video of map being built real time
 ### Performance Analysis
 The algorithm was implemented on CPU and GPU. Eight kernels were used to parallelize most parts of the algorithm. The execution time of these sections improved dramatically on the GPU. The different execution times on GPU and CPU for each kernel is shown in the figure below. The number of particles used is 500.
 
-![](images/kernels.png)
+![](Images/kernels.png)
 
 It is seen that all the functionality had a speedup on the GPU except for calculation of CDF. This was because the CDF calculation involves an operation of atomic add that defeats the purpose of parallelism.
 
 The total execution time for CPU and GPU for various particle sizes is shown in the figure below. The execution time in the CPU implementation increases exponentially with particle sizes. This is evident because of the nature of series computation. On the other hand the parallel computation on the GPU has a very linear increase with particle size. Additionally, another implementation with zero copy was performed as the operations were performed on streaming data. This eliminated the need for copying the data from one CPU to GPU. This implementation on an average executed 1-2ms faster.
 
-![](images/time.png)
+![](Images/time.png)
 
 The following figure shows the update rates of GPU implementation with and without zero copy. These are the rates at which the output topics are published to the ROS system.
 
-![](images/rate.png)
+![](Images/rate.png)
 
 Another Performance done was on the power consumption of the execution. Three kernels were made to switch dynamically from CPU to GPU (enabled by zero copy)
 1. Particle generation and scan orientation
@@ -76,7 +76,7 @@ Another Performance done was on the power consumption of the execution. Three ke
 3. Copy of Local Map to Global Map
 The CPU and the GPU were executed at different clock frequencies with different combinations of the above three kernels on CPU and GPU. The update rates and power consumption were recorded
 
-![](images/power.png)
+![](Images/power.png)
 
 A combination of `C C G` denotes the first and second operation (mentioned above) run on CPU and the third on GPU. It is seen from the first graph that the update rate is maximum when all the three operations are run on the GPU but at the cost of high power as seen in the second graph. The information from this graph can be used to train a controller to switch to a lower update rate when the map is already known by varying the operations on CPU and GPU and also throttling the frequencies thus saving power.
 
