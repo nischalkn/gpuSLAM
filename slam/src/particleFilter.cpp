@@ -55,6 +55,10 @@ void ParticleFilter::calculateScores(double *local_odom, nav_msgs::OccupancyGrid
 	float resolution = gmap.info.resolution;
 	float min_w = -((gmap.info.width-1)*(resolution))/2;
 	float min_h = -((gmap.info.height-1)*(resolution))/2;
+
+	// CpuTimer timer;
+	// timer.Start();
+
 	for (int i = 0; i < gmap.info.width; ++i)
 	{
 		x_im[i] = min_w + resolution*i;
@@ -91,6 +95,8 @@ void ParticleFilter::calculateScores(double *local_odom, nav_msgs::OccupancyGrid
 		correlationScores[i] = map_correlation(gmap,x_im,y_im,roatated_scan_y,roatated_scan_x, valid_scans);
 		//std::cout << i << ": " << correlationScores[i] << std::endl;
 	}
+	// timer.Stop();
+	// printf("%f\n", timer.Elapsed());
 }
 
 long ParticleFilter::map_correlation(nav_msgs::OccupancyGrid gmap, double* y_im, double* x_im, double* vp_y, double* vp_x, int np)
@@ -158,7 +164,7 @@ void ParticleFilter::getBestPose(double *best_pose, long *correlationScores)
 	best_pose[0] = particles_pose[bestParticle*3+0];
 	best_pose[1] = particles_pose[bestParticle*3+1];
 	best_pose[2] = particles_pose[bestParticle*3+2];
-	std::cout << best_pose[0] << ", " << best_pose[1] << ", " << best_pose[2] << ", " << std::endl;
+	//std::cout << best_pose[0] << ", " << best_pose[1] << ", " << best_pose[2] << ", " << std::endl;
 	// timer.Stop();
 	// printf("%f\n", timer.Elapsed());
 }
@@ -176,6 +182,8 @@ void ParticleFilter::resampleParticles()
 	//std::cout << "neff: " << neff << std::endl;
 	if(neff<neff_thresh)
 	{
+		CpuTimer timer;
+		timer.Start();
 		// /std::cout << "Resampled: " << neff << std::endl;
 		cumulative_sum[0] = weights[0];
 		for (int i = 1; i < particles; i++)
@@ -199,6 +207,9 @@ void ParticleFilter::resampleParticles()
 
 		for (int i = 0; i < particles; ++i)
 			weights[i] = (double)1/particles;
+
+		timer.Stop();
+		printf("%f\n", timer.Elapsed());
 	}
 	// else
 	// {

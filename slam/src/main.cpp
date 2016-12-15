@@ -42,10 +42,10 @@ int main(int argc, char **argv)
 	ranges = (float *)malloc(sizeof(float)*2000);
 	valid = (int *)malloc(sizeof(int)*2000);
 
-	n.param("particles",particles,500);
+	n.param("particles",particles,7000);
 	n.param("motion_noise_x",motion_noise_x,0.05);
 	n.param("motion_noise_y",motion_noise_y,0.05);
-	n.param("motion_noise_theta",motion_noise_theta,0.0524);
+	n.param("motion_noise_theta",motion_noise_theta,0.01);
 	n.param("lmap_width",lmap_width,60);
 	n.param("lmap_height",lmap_height,60);
 	n.param("lmap_resolution",lmap_resolution,0.1);
@@ -84,10 +84,13 @@ int main(int argc, char **argv)
 	{
 		if(scan_count>0) {
 			double local_odom[3];
-			double best_pose[3];
+			double best_pose[3] = {0,0,0};;
 			if(firstscan)
 			{
-				og.buildLocalMap(ranges, valid, scan_count);
+				//og->buildLocalMap(ranges, valid, scan_count);
+				og.clearLmap();
+				int valid_scans = og.convertToCart(ranges, valid, scan_count, scan_cart_x, scan_cart_y);
+				og.createLocalMap(&best_pose[0], scan_cart_x, scan_cart_y, valid_scans);
 				og.copyLocalToGlobal(0,0,0);
 				firstscan = 0;
 			}

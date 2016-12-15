@@ -134,7 +134,7 @@ int Maps::buildLocalMap(float *ranges, int *valid, int num)
 void Maps::publish(const ros::Publisher& pub1, const ros::Publisher& pub2)
 {
 		pub1.publish(lmap);
-		pub2.publish(map);
+		pub2.publish(gmap);
 }
 
 void Maps::copyLocalToGlobal(double x, double y, double theta)
@@ -204,6 +204,8 @@ int Maps::convertToCart(float *ranges, int *valid, int num, float *scan_cart_x, 
 
 void Maps::createLocalMap(double *pose, float *scan_cart_x, float *scan_cart_y, int valid_scans)
 {
+	// CpuTimer timer;
+	// timer.Start();
 	double ang = pose[2];
 	double R[2][2] = {std::cos(ang), -std::sin(ang), std::sin(ang), std::cos(ang)};
 	double *roatated_scan_x = (double*)malloc(sizeof(double)*valid_scans);
@@ -218,6 +220,9 @@ void Maps::createLocalMap(double *pose, float *scan_cart_x, float *scan_cart_y, 
 		cells[j][0] = ceil(roatated_scan_x[j]/lmap.info.resolution);
 		cells[j][1] = ceil(roatated_scan_y[j]/lmap.info.resolution);
 	}
+
+	// timer.Stop();
+	// printf("%f\n", timer.Elapsed());
 
 	// CpuTimer timer;
 	// timer.Start();
