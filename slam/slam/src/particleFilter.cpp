@@ -1,5 +1,15 @@
 #include "particleFilter.h"
 #include "timer.h"
+
+/**
+*	Initialize particle filter
+*
+*	@param 	parts 		Number of particles for the particle filter
+*	@param 	mn_x 		Motion noise in X direction
+*	@param 	mn_y 		Motion noise in Y direction
+*	@param 	mn_theta 	Motion noise in theta direction
+*	@param 	neff_t 		threshold on particle weights
+*/
 void ParticleFilter::initPF(int parts, double mn_x, double mn_y, double mn_theta, int neff_t)
 {
 	particles = parts;
@@ -18,6 +28,13 @@ void ParticleFilter::initPF(int parts, double mn_x, double mn_y, double mn_theta
 	//pose_pub = n.advertise<geometry_msgs::Pose2D>("pose", 1000);
 }
 
+/**
+*	Update new pose from the sensor
+*
+*	@param 	x 		Incremental X position of vehicle in map
+*	@param 	y 		Incremental Y position of vehicle in map
+*	@param 	theta 	Orientaion of vehicle in map
+*/
 void ParticleFilter::newPos(double x, double y, double theta)
 {
 	prev_pose[0] = curr_pose[0];
@@ -29,6 +46,11 @@ void ParticleFilter::newPos(double x, double y, double theta)
 	//std::cout << "Prev Pose: " <<curr_pose[0] << ", " << curr_pose[1] << ", " << curr_pose[2] << std::endl;
 }
 
+/**
+*	Calculate the current position in the map by acccumulating incremental pose
+*
+*	@param 	local_odom 	Current X position in map
+*/
 void ParticleFilter::motionUpdate(double *local_odom)
 {
 	double delta_pose[3];
@@ -45,6 +67,16 @@ void ParticleFilter::motionUpdate(double *local_odom)
 	//std::cout << local_odom[0] << ", " << local_odom[1] << ", " << local_odom[2] << std::endl << std::endl;;
 }
 
+/**
+*	Find correlation score of scan for each particle
+*
+*	@param 	local_odom 		pose of robot it global map
+*	@param 	gmap 			Global map
+*	@param 	scan_cart_x 	X coordinate of laser scan.
+*	@param 	scan_cart_y 	Y coordinate of laser scan.
+*	@param 	valid_scans 	number of valid scans.
+*	@param 	correlationScores 	updated correlation score for each particle based on current scan
+*/
 void ParticleFilter::calculateScores(double *local_odom, nav_msgs::OccupancyGrid gmap, float *scan_cart_x, 
 	float *scan_cart_y, int valid_scans, long *correlationScores) 
 {
@@ -99,6 +131,17 @@ void ParticleFilter::calculateScores(double *local_odom, nav_msgs::OccupancyGrid
 	// printf("%f\n", timer.Elapsed());
 }
 
+/**
+*	Find coorelation of scan and global map
+*
+*	@param 	gmap 		Global map
+*	@param 	y_im 		Y coordinate of global map.
+*	@param 	x_im 		X coordinate of gloabl map.
+*	@param 	vp_y 		Rotated Y coordiante of scan
+*	@param 	vp_x 		Rotated X coordiante of scan
+*	@param 	np 			Number of laser scans
+*	@return 			Coorelation score
+*/
 long ParticleFilter::map_correlation(nav_msgs::OccupancyGrid gmap, double* y_im, double* x_im, double* vp_y, double* vp_x, int np)
 {
 	signed char* im = &gmap.data[0];
@@ -140,6 +183,12 @@ long ParticleFilter::map_correlation(nav_msgs::OccupancyGrid gmap, double* y_im,
 	return cpr;
 }
 
+/**
+*	Obtain the particle with the best pose based on the coorelation score
+*
+*	@param 	best_pose 			pose of the best particle
+*	@param 	correlationScores 	Coorelation scores of all particles
+*/
 void ParticleFilter::getBestPose(double *best_pose, long *correlationScores)
 {
 	//CpuTimer timer;
@@ -169,6 +218,10 @@ void ParticleFilter::getBestPose(double *best_pose, long *correlationScores)
 	// printf("%f\n", timer.Elapsed());
 }
 
+/**
+*	Resample particles if weights reach a threshold
+*
+*/
 void ParticleFilter::resampleParticles()
 {
 	double sum_weights = 0;

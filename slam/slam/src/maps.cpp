@@ -1,7 +1,22 @@
 #include "maps.h"
 #include "timer.h"
 
-
+/**
+*	Initialize local map, global map and occupancy grid
+*
+*	@param 	lmap_w 		Maximum width of local map.
+*	@param 	lmap_h 		Maximum height of local map.
+*	@param 	lmap_res 	Resolution of local map.
+*	@param 	gmap_w 		Maximum width of global map.
+*	@param 	gmap_h 		Maximum height of global map.
+*	@param 	gmap_res 	Resolution of local map.
+*	@param 	sat 		Maximum saturation for occupancy grid.
+*	@param 	logodd_o 	LogOdds for occupied cell.
+*	@param 	logodd_f 	LogOdds for free cell.
+*	@param 	angle_min 	Minimum angle of LiDAR.
+*	@param 	angle_max 	Maximum angle of LiDAR.
+*	@param 	angle_inc 	Angle between scans.
+*/
 void Maps::init(int lmap_w, int lmap_h, double lmap_res, int gmap_w, int gmap_h,
 		double gmap_res, int sat, int logodd_o, int logodd_f, double angle_min,
 		double angle_max, double angle_inc)
@@ -49,6 +64,17 @@ void Maps::init(int lmap_w, int lmap_h, double lmap_res, int gmap_w, int gmap_h,
 	map.data.assign(map.info.width * map.info.height, -1);
 }
 
+/**
+*	Draw a line between two coordinates using Breshnam's algorithm
+*
+*	@param 	x0 		X coordinate of point 1.
+*	@param 	y0 		Y coordinate of point 1.
+*	@param 	x1 		X coordinate of point 2.
+*	@param 	y1 		X coordinate of point 2.
+*	@param 	xis 	All the X coordinates through which the line passes through
+*	@param 	yis 	All the Y coordinates through which the line passes through
+*	@return 		Number of points in the line
+*/
 int Maps::line(int x0, int y0, int x1, int y1, int *xis, int *yis) {
  
 	int dx = abs(x1-x0), sx = x0<x1 ? 1 : -1;
@@ -68,75 +94,26 @@ int Maps::line(int x0, int y0, int x1, int y1, int *xis, int *yis) {
 	return i;
 }
 
-int Maps::buildLocalMap(float *ranges, int *valid, int num)
-{
-	//std::cout << "building new map" << std::endl;
-	lmap.data.assign(lmap.info.width * lmap.info.height, 0);
-	double ranges_cart[num][2];
-	int cells[num][2];
-	int j = 0;
-	int maxCellsWidth = lmap.info.width;
-	int maxCellsHeight = lmap.info.height;
-	for(int i=0;i<num;i++) 
-	{
-		if(valid[i]==1) 
-		{
-			ranges_cart[j][0] = ranges[i]*std::cos(scan_angle_min+scan_angle_inc*i);
-			ranges_cart[j][1] = ranges[i]*std::sin(scan_angle_min+scan_angle_inc*i);
-			cells[j][0] = ceil(ranges_cart[j][0]/lmap.info.resolution);
-			cells[j][1] = ceil(ranges_cart[j][1]/lmap.info.resolution);
-			j++;
-//			std::cout << cells[j][0] << ", " << cells[j][1] << ", " << j << std::endl;
-		}
-	}
-
-	//std::cout << "Valid scans: " << j << ", Map Size: " << lmap.data.size() << std::endl;
-
-	int *xis; int *yis;
-	xis = (int *)malloc(sizeof(int)*maxCellsWidth*2);
-	yis = (int *)malloc(sizeof(int)*maxCellsHeight*2);
-	for(int i=0;i<j;i++) 
-	{
-		if(cells[i][0] > -maxCellsWidth/2 && cells[i][0]<maxCellsWidth/2 && cells[i][1] > -maxCellsHeight/2 && cells[i][1]<maxCellsHeight/2)
-		{
-			//std::cout << "scan num: " << i << ", " << cells[i][0] << ", " << cells[i][1] << std::endl;
-			int len = Maps::line(0,0,cells[i][0],cells[i][1],xis,yis);
-			//std::cout << "Out of line fn" << std::endl;
-			for (int k = 0; k < len; ++k)
-			{
-				int temp_x = xis[k]+maxCellsWidth/2;
-				int temp_y = yis[k]+maxCellsHeight/2;
-				int index_1d = temp_y * maxCellsWidth + temp_x;
-				//std::cout << "x: " << xis[k] << ", y: " << yis[k] << ", index_1d: " << index_1d << std::endl;
-				lmap.data[index_1d] = -logodd_free;
-			}
-			int temp_x = xis[len]+maxCellsWidth/2;
-			int temp_y = yis[len]+maxCellsHeight/2;
-			int index_1d = temp_y * maxCellsWidth + temp_x;
-			lmap.data[index_1d] = logodd_occ;
-		}
-
-	}
-	// for (int i = 0; i < maxCellsHeight; ++i)
-	// {
-	// 	for (int k = 0; k < maxCellsWidth; ++k)
-	// 	{
-	// 		std::cout << lmap.data[i*maxCellsWidth + k] << " ";
-	// 	}
-	// 	std::cout << std::endl;
-	// 	/* code */
-	// }
-	lmap.header.frame_id = "map";
-  	lmap.header.stamp = ros::Time::now();
-	return j;
-}
-
+/**
+*	Publish a local map and occupancy grid
+*
+*	@param 	pub1	Topic to which local map has to be published.
+*	@param 	y0 		Topic to which occupancy grid must be published.
+*/
 void Maps::publish(const ros::Publisher& pub1, const ros::Publisher& pub2)
 {
 		pub1.publish(lmap);
 		pub2.publish(gmap);
 }
 
+/**
+*	Copy the local map generated from the current scan to the global map displaced
+*	by (x, y) from the center of global map and roated by theta anticlockwise.
+*
+*	@param 	x 		translation of local map from center of global map along X axis
+*	@param 	y 		translation of local map from center of global map along Y axis
+*	@param 	theta 	rotation of local map in anti clockwise direction.
+*/
 void Maps::copyLocalToGlobal(double x, double y, double theta)
 {
 	int maxCellsWidth_lmap = lmap.info.width;
@@ -173,16 +150,35 @@ void Maps::copyLocalToGlobal(double x, double y, double theta)
   	map.header.stamp = ros::Time::now();
 }
 
+/**
+*	Return the Global map
+*
+*	@return 		Global Map
+*/
 nav_msgs::OccupancyGrid Maps::returnGmap()
 {
 	return gmap;
 }
 
+/**
+*	Clean the local map by setting all pixels/cells to 0
+*
+*/
 void Maps::clearLmap() 
 {
 	lmap.data.assign(lmap.info.width * lmap.info.height, 0);
 }
 
+/**
+*	Convert laser scan from polar coordinate to cartesian coordinate
+*
+*	@param 	ranges 			radius in polar coordinates in meters
+*	@param 	valid 			index of scans which are valid between 0.1m and 30m
+*	@param 	num 			Total number of scans
+*	@param 	scan_cart_x 	Cartesian X coordinate of valid scans only in meters
+*	@param 	scan_cart_y 	Cartesian Y coordinate of valid scans only in meters
+*	@return 				Total number of valid scans
+*/
 int Maps::convertToCart(float *ranges, int *valid, int num, float *scan_cart_x, float *scan_cart_y)
 {
 	int j = 0;
@@ -202,6 +198,14 @@ int Maps::convertToCart(float *ranges, int *valid, int num, float *scan_cart_x, 
 	return j;
 }
 
+/**
+*	Create a local map from the current scan based on the current pose
+*
+*	@param 	pose 			Current pose of the robot obtained from sensor.
+*	@param 	scan_cart_x 	X coordinates of scans in cartesian system
+*	@param 	scan_cart_y 	Y coordinates of scans in cartesian system
+*	@param 	valid_scans 	total number of valid scans.
+*/
 void Maps::createLocalMap(double *pose, float *scan_cart_x, float *scan_cart_y, int valid_scans)
 {
 	// CpuTimer timer;
@@ -227,6 +231,7 @@ void Maps::createLocalMap(double *pose, float *scan_cart_x, float *scan_cart_y, 
 	// CpuTimer timer;
 	// timer.Start();
 	int *xis; int *yis;
+	////////////////<---------------TODO: move these to initialization ----------/
 	xis = (int *)malloc(sizeof(int)*maxCellsWidth*2);
 	yis = (int *)malloc(sizeof(int)*maxCellsHeight*2);
 	for(int i=0;i<valid_scans;i++) 

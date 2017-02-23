@@ -1,3 +1,12 @@
+/**
+    University of Pennsylvania 
+    Purpose: Implementation of Particle filter based SLAM(simultaneous localization and 
+    mapping) using LiDAR data for f1tenth.org.
+
+    @author Nischal K N
+    @version 1 11/23/16 
+*/
+
 #include "main.h"
 
 ParticleFilter pf;
@@ -7,6 +16,11 @@ float *ranges;
 int *valid;
 int firstscan = 1;
 
+/**
+*	Callback function when a new scan is received from the LIDAR.
+*
+*	@param 		msg 	Sensor message of type LaserScan containing the latest scan
+*/
 void scanCallback(const sensor_msgs::LaserScan::ConstPtr& msg)
 {	
 	scan_angle_min = msg->angle_min;
@@ -22,6 +36,11 @@ void scanCallback(const sensor_msgs::LaserScan::ConstPtr& msg)
 	}
 }
 
+/**
+*	Callback function when a new odometry update is received from the tacometer
+*
+*	@param 		msg 	Odometry message containing the latest position and orientation
+*/
 void poseCallback(const nav_msgs::Odometry::ConstPtr& msg)
 {
 	double w = msg->pose.pose.orientation.w;
